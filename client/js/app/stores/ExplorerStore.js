@@ -94,6 +94,7 @@ function _defaultStep() {
     filters: [],
     optional: false,
     inverted: false,
+    with_actors: false,
     active: false,
     isValid: true,
     errors: []
@@ -138,7 +139,17 @@ function _prepareUpdates(explorer, updates) {
     }
   }
   var newModel = _.mergeWith({}, explorer, _.omit(updates, 'response'), customizer);
-  if (updates.response) newModel.response = updates.response;
+
+  if(updates.response && updates.response.actors) {
+    var actors = _.reduce(_.filter(updates.response.actors), function(acc, el, index) {
+      return acc.concat(_.map(el, function(e){
+        return {actor: e, step: index+1}
+      }))
+    }, [])
+    newModel.response = {result: actors}
+  } else if (updates.response) {
+    newModel.response = updates.response;
+  }
 
   if(newModel.query.analysis_type === 'funnel' && explorer.query.analysis_type !== 'funnel') {
     newModel = _migrateToFunnel(explorer, newModel);
@@ -162,8 +173,8 @@ function _migrateToFunnel(explorer, newModel) {
 
   _.each(SHARED_FUNNEL_STEP_PROPERTIES, function (key) {
     if(!_.isUndefined(explorer.query[key]) && !_.isNull(explorer.query[key])) {
-      firstStep[key] = explorer.query[key] 
-    }      
+      firstStep[key] = explorer.query[key]
+    }
 
     newModel.query[key] = (key === 'filters') ? [] : null;
   });
@@ -262,7 +273,7 @@ function _prepareFilterUpdates(explorer, filter, updates) {
     if (newOp === 'in') updates.coercion_type = 'List';
     if (newOp === 'exists') updates.coercion_type = 'Boolean';
     if (newOp === 'within') updates.coercion_type = 'Geo';
-    
+
     // If it's not any of these operators, we still need to make sure that the current coercion_type is available
     // as an option for this new operator.
     var coercionOptions = _.find(ProjectUtils.getConstant('FILTER_OPERATORS'), { value: updates.operator }).canBeCoeredTo;
@@ -271,11 +282,11 @@ function _prepareFilterUpdates(explorer, filter, updates) {
       updates.coercion_type = coercionOptions[0];
     }
   }
-  
+
   if (updates.coercion_type === 'Geo' && filter.coercion_type !== 'Geo') {
     updates.property_value = _defaultGeoFilter();
   }
-  
+
   updates.property_value = FilterUtils.getCoercedValue(_.merge({}, filter, updates));
 
   return updates;
@@ -535,18 +546,18 @@ ExplorerStore.dispatchToken = AppDispatcher.register(function(action) {
 
     case ExplorerConstants.EXPLORER_CREATE_BATCH:
       action.models.forEach(function(model) {
-        _explorers[model.id] ? _update(model.id, model) : _create(model);        
+        _explorers[model.id] ? _update(model.id, model) : _create(model);
       });
       finishAction();
       break;
-      
+
     case ExplorerConstants.EXPLORER_CLONE:
       var source = ExplorerStore.get(action.id);
-      _create({ query: _.cloneDeep(source.query), 
+      _create({ query: _.cloneDeep(source.query),
                 metadata: {
                   display_name: null,
                   visualization: {
-                    chart_type: _.cloneDeep(source.metadata.visualization.chart_type) 
+                    chart_type: _.cloneDeep(source.metadata.visualization.chart_type)
                   }
                 }
               });

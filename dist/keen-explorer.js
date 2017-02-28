@@ -59689,7 +59689,7 @@
 	var FilterUtils = __webpack_require__(/*! ./FilterUtils */ 330);
 	var TimeframeUtils = __webpack_require__(/*! ./TimeframeUtils */ 333);
 	
-	var STEP_PARAMS = ['event_collection', 'actor_property', 'timeframe', 'interval', 'timezone', 'filters', 'optional', 'inverted'];
+	var STEP_PARAMS = ['event_collection', 'actor_property', 'timeframe', 'interval', 'timezone', 'filters', 'optional', 'inverted', 'with_actors'];
 	module.exports = {
 	
 	  stepJSON: function stepJSON(step) {
@@ -59728,6 +59728,7 @@
 	
 	    step.inverted = step.inverted === true || step.inverted === "true";
 	    step.optional = step.optional === true || step.optional === "true";
+	    step.with_actors = step.with_actors === true || step.with_actors === "true";
 	
 	    return step;
 	  }
@@ -84331,6 +84332,7 @@
 	    filters: [],
 	    optional: false,
 	    inverted: false,
+	    with_actors: false,
 	    active: false,
 	    isValid: true,
 	    errors: []
@@ -84371,7 +84373,17 @@
 	    }
 	  }
 	  var newModel = _.mergeWith({}, explorer, _.omit(updates, 'response'), customizer);
-	  if (updates.response) newModel.response = updates.response;
+	
+	  if (updates.response && updates.response.actors) {
+	    var actors = _.reduce(_.filter(updates.response.actors), function (acc, el, index) {
+	      return acc.concat(_.map(el, function (e) {
+	        return { actor: e, step: index + 1 };
+	      }));
+	    }, []);
+	    newModel.response = { result: actors };
+	  } else if (updates.response) {
+	    newModel.response = updates.response;
+	  }
 	
 	  if (newModel.query.analysis_type === 'funnel' && explorer.query.analysis_type !== 'funnel') {
 	    newModel = _migrateToFunnel(explorer, newModel);
@@ -85191,6 +85203,17 @@
 	    validate: function validate(model) {
 	      if (FormatUtils.isNullOrUndefined(model.inverted)) return false;
 	      return typeof model.inverted === 'boolean';
+	    }
+	
+	  },
+	
+	  with_actors: {
+	
+	    msg: 'You must select whether this step returns the actors.',
+	
+	    validate: function validate(model) {
+	      if (FormatUtils.isNullOrUndefined(model.with_actors)) return false;
+	      return typeof model.with_actors === 'boolean';
 	    }
 	
 	  }
@@ -86784,6 +86807,12 @@
 	          { className: 'block-label' },
 	          React.createElement('input', { name: 'inverted', type: 'checkbox', checked: this.props.step.inverted, onChange: this.handleCheckboxChange }),
 	          ' Inverted Step'
+	        ),
+	        React.createElement(
+	          'label',
+	          { className: 'block-label' },
+	          React.createElement('input', { name: 'with_actors', type: 'checkbox', checked: this.props.step.with_actors, onChange: this.handleCheckboxChange }),
+	          ' With Actors'
 	        ),
 	        React.createElement('hr', null),
 	        remove
