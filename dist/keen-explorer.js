@@ -85380,7 +85380,7 @@
 	              title: 'Browse saved queries',
 	              onClick: this.toggled.bind(this, 'browse') },
 	            React.createElement('span', { className: 'icon glyphicon icon-th-list glyphicon-th-list' }),
-	            'Browse'
+	            'Reports'
 	          )
 	        )
 	      )

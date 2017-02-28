@@ -43,7 +43,7 @@ var QueryPaneTabs = React.createClass({
                title="Browse saved queries"
                onClick={this.toggled.bind(this, 'browse')}>
               <span className="icon glyphicon icon-th-list glyphicon-th-list"></span>
-              Browse
+              Reports
             </a>
           </li>
         </ul>
